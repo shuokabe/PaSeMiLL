@@ -6,4 +6,6 @@ The `data` folder contains the raw (unprocessed) datasets and the BUCC-style fil
 ## Code section
 The `code` folder contains useful code to use with the original [UnsupPSE](https://github.com/hangyav/UnsupPSE) pipeline ([Hangya and Fraser, 2019](https://aclanthology.org/P19-1118.pdf)).
 
+The pre-training of XLM-R with Upper Sorbian data is addressed in the `pretraining` subfolder.
+
 ## How to use?
