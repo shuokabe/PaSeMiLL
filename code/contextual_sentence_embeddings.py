@@ -9,6 +9,7 @@ from tqdm import tqdm
 from transformers import XLMRobertaModel, XLMRobertaTokenizer, AutoConfig, AutoModel, AutoTokenizer
 #BertModel, BertTokenizer, XLMModel, XLMTokenizer, RobertaModel, RobertaTokenizer, XLMRobertaModel, XLMRobertaTokenizer, AutoConfig, AutoModel, AutoTokenizer
 
+import utils as utils
 
 ### MODIFY PATH ###
 #PRETRAINING_PATH = '../pretraining_test/modelling/output-hsb' # With HSB & DE
@@ -66,31 +67,6 @@ class EmbeddingLoader(object):
 				return outputs[:, 1:-1, :]
 		else:
 			return None
-
-
-# Utility functions
-def flatten_2D(list_of_list):
-    '''Flatten a 2D list (list of list).'''
-    return [element for element_list in list_of_list for element in element_list]
-
-def delete_value_from_vector(vector, value):
-    '''Delete a given value from a vector.
-
-    To be used only when the value is in the vector.
-    '''
-    if value in vector:
-        vector.remove(value)
-        return vector
-    else:
-        raise ValueError('The asked value is not in the vector.')
-
-def text_to_line(raw_text):
-    r'''Split a raw text into a list of sentences (string) according to '\n'.'''
-    split_text = re.split('\n', raw_text)
-    if '' in split_text: # To remove empty lines
-        return delete_value_from_vector(split_text, '')
-    else:
-        return split_text
 
 
 # Processing embeddings
@@ -161,18 +137,65 @@ def to_xlmr_sentence_embeddings(path, sentence_list, model_name, start_i=0):
     #return embedding_list
 
 
+def get_labse_embeddings(split_sentence, labse_model):
+    '''Get the string version of the sentence embedding from the LaBSE model.'''
+    labse_embedding = labse_model.encode(split_sentence)
+    #print(labse_embedding, labse_embedding.shape)
+    np_embedding = labse_embedding.tolist()
+    #print(type(labse_embedding), len(np_embedding))
+    str_embedding = [f'{embed_value:.6f}' for embed_value in labse_embedding]
+    return str_embedding
+
+def to_labse_sentence_embeddings(path, sentence_list, start_i=0):
+    labse_model = SentenceTransformer('sentence-transformers/LaBSE')
+    
+    embedding_size = 768 #300
+    
+    # Initial step
+    if start_i == 0:
+        sentence = sentence_list[0]
+        split_sentence = sentence.split('\t')
+        assert len(split_sentence) == 2, f'The line contains too many fields: {len(split_sentence)}'
+        str_embedding = get_labse_embeddings(split_sentence[1], labse_model) # Convert format 
+    
+        # First line
+        n = len(sentence_list)
+        vec_size = embedding_size #len(np_embedding) #len(split_file[0].split(' '))
+        
+        with open(path, 'w', encoding = 'utf8') as out_text:
+            out_text.write(f'{n} {vec_size}\n{split_sentence[0]} {" ".join(str_embedding)}\n')
+
+    embedding_list = []
+    #for word in sentence_list:
+    for i in tqdm(range(start_i + 1, len(sentence_list))):
+        sentence = sentence_list[i]
+        split_sentence = sentence.split('\t')
+        assert len(split_sentence) == 2, f'The line contains too many fields: {len(split_sentence)}'
+        str_embedding = str_embedding = get_labse_embeddings(split_sentence[1], labse_model) #get_embedding(split_sentence[1], xlmr_embeddings)
+        if str_embedding: # Not None
+            embedding_list.append(f'{split_sentence[0]} {" ".join(str_embedding)}')
+        if i % 10000 == 0:
+            with open(path, 'a', encoding = 'utf8') as out_text:
+                out_text.write('\n'.join(embedding_list) + '\n')
+            embedding_list = []
+    # Remaining lines
+    with open(path, 'a', encoding = 'utf8') as out_text:
+        out_text.write('\n'.join(embedding_list) + '\n')
+
 # Extracting sentence embeddings in both languages
 def main():
     args = parse_args()
 
     # Input file
     input_file = open(args.input_file, 'r').read()
-    split_file = text_to_line(input_file)
+    split_file = utils.text_to_line(input_file)
 
     model_name = args.model_name #'pretrained' #'glot500' #'xlmr'
     print(f'Model to use: {model_name}')
     if model_name in ['xlmr', 'glot500', 'pretrained']:
         to_xlmr_sentence_embeddings(args.output_file, split_file, model_name, start_i=0)
+    elif model_name == 'labse':
+        to_labse_sentence_embeddings(args.output_file, split_file, start_i=0)
     return 0
 
 if __name__ == '__main__':
