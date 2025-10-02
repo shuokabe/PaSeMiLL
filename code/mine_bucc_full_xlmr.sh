@@ -29,7 +29,7 @@ PREFIX='distil_xlmr.'  #'laser3.' #'glot500.' #'laser.' #'pretrained-hsb.' #'glo
 #    for src_lang in $SRC_LANGS; do
 #        for trg_lang in $TRG_LANGS; do
 #            for lang in $src_lang $trg_lang; do
-#		echo "$src_lang-$trg_lang document embeddings";
+#		         echo "$src_lang-$trg_lang sentence embeddings";
 #                $PYTHON contextual_document_embeddings.py --input_file $DATA/bucc2017/$src_lang-$trg_lang/$src_lang-$trg_lang.$data.$lang \
 #                --output_file $DOC_EMBEDDINGS/bucc2017/$src_lang-$trg_lang/$PREFIX$src_lang-$trg_lang.$data.$lang.vec -m 'laser'
 #            done;
