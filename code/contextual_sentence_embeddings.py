@@ -20,7 +20,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input_file', type=str, required=True, help='Sentence file (format: <ID>\t<sentence>)=')
     parser.add_argument('-o', '--output_file', type=str, required=True, help='Output file path')
-    parser.add_argument('-m', '--model_name', type=str, required=True, choices=['xlmr', 'glot500', 'pretrained'], help='Embedding model')
+    parser.add_argument('-m', '--model_name', type=str, required=True, 
+                        choices=['xlmr', 'glot500', 'pretrained', 'labse'], help='Embedding model')
 
     return parser.parse_args()
 

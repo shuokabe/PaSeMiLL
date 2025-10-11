@@ -16,6 +16,12 @@ The pipeline relies on the following three steps:
 1. Converting sentences into vectors
 
 The `contextual_sentence_embeddings.py` file can use the backend language model of your choice (e.g., XLM-R, Glot500, pre-trained, LaBSE, etc.).
+Using the following command, you can convert the `input_file.txt` into a file (`output.vec`) with the sentences converted with the `model_name` model.
+
+```
+ python contextual_document_embeddings.py --input_file input_file.txt --output_file output.vec --model_name model_name
+```
+
 
 2. Mining using faiss
 
@@ -31,17 +37,17 @@ It uses the CSLS metrics to compute the similarity (`-m csls`).
 The final filtering is done using the `filter.py` file. 
 It takes the previous similarity dictionary `output_dictionary.sim` as input and outputs sentence pairs (stored in `output.sim.pred`) with a score above a `dynamic` threshold.
 ```
-python UnsupPSE/scripts/filter.py --input output_dictionary.sim --output output.sim.pred -m dynamic -th 2.0
+python scripts/filter.py --input output_dictionary.sim --output output.sim.pred -m dynamic -th 2.0
 ```
 When a file with the gold sentence pairs (`sentence_pair.gold`) exists, you can evaluate the mining quality with the usual precision, recall, and F-score, as in the corresponding BUCC Shared Task.
 ```
-python UnsupPSE/scripts/bucc_f-score.py -p output.sim.pred -g sentence_pair.gold > output.sim.pred.res
+python scripts/bucc_f-score.py -p output.sim.pred -g sentence_pair.gold > output.sim.pred.res
 ```
 
 ## Optional commands
 #### Alignment post-processing
 ```
-python UnsupPSE/align_source_target.py -m output.sim.pred -s source_file -t target_file -o aligned.sim -l model_name
+python align_source_target.py -m output.sim.pred -s source_file -t target_file -o aligned.sim -l model_name
 ```
 After a first filtering based on the similarity score (`output.sim.pred`), alignment links are computed between the original source and target sentences (`source_file` and `target_file`) with SimAlign.
 
