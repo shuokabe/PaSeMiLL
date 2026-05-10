@@ -20,6 +20,10 @@ Once your two monolingual corpora are ready (one sentence per line):
 2. Compute similarity scores between your source and target sentences.
 3. Filter the output sentence pairs based on a defined threshold (hyperparameter).
 
+## Licence
+The repository has the MIT licence (e.g., `code` folder), *except* for the benchmark dataset.
+The dataset (`data` folder) is released with a CC BY-NC-SA licence.
+
 ## Citations
 For the updated version of the pipeline, please use the following citation (from the ACL Anthology):
 

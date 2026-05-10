@@ -41,31 +41,32 @@ PREFIX='distil_xlmr.'  #'laser3.' #'glot500.' #'laser.' #'pretrained-hsb.' #'glo
 for data in $BUCC_SETS; do
     for src_lang in $SRC_LANGS; do
         for trg_lang in $TRG_LANGS; do
-		echo "$src_lang-$trg_lang nearest neighbour";
-		CUDA_VISIBLE_DEVICES=$GPUS $PYTHON scripts/bilingual_nearest_neighbor.py --source_embeddings $DOC_EMBEDDINGS/bucc2017/$src_lang-$trg_lang/$PREFIX$src_lang-$trg_lang.$data.$src_lang.vec \
-		--target_embeddings $DOC_EMBEDDINGS/bucc2017/$src_lang-$trg_lang/$PREFIX$src_lang-$trg_lang.$data.$trg_lang.vec \
-		--output $DICTIONARIES/DOC.$PREFIX$src_lang-$trg_lang.$data.sim --knn 10 -m csls --cslsknn 20 #nn #$PREFIX
-                #--output $DICTIONARIES/DOC.$src_lang-$trg_lang.$data.sim --knn $TOPN_DOC -m csls --cslsknn $TOPN_CSLS #nn
-            
-		# Opposite direction
-		#CUDA_VISIBLE_DEVICES=$GPUS $PYTHON scripts/bilingual_nearest_neighbor.py --source_embeddings $DOC_EMBEDDINGS/bucc2017/$src_lang-$trg_lang/$src_lang-$trg_lang.$data.$trg_lang.vec \
-                #--target_embeddings $DOC_EMBEDDINGS/bucc2017/$src_lang-$trg_lang/$src_lang-$trg_lang.$data.$src_lang.vec \
-                #--output $DICTIONARIES/DOC.$trg_lang-$src_lang.$data.sim --knn 10 -m csls --cslsknn 20
+            for model in $MODELS; do
+            echo "$src_lang-$trg_lang $data $model nearest neighbour";
+            CUDA_VISIBLE_DEVICES=$GPUS $PYTHON scripts/bilingual_nearest_neighbor.py \
+            --source_embeddings $DOC_EMBEDDINGS/bucc2017/$src_lang-$trg_lang/$model.$src_lang-$trg_lang.$data.$src_lang.vec \
+            --target_embeddings $DOC_EMBEDDINGS/bucc2017/$src_lang-$trg_lang/$model.$src_lang-$trg_lang.$data.$trg_lang.vec \
+            --output $DICTIONARIES/DOC.$model.$src_lang-$trg_lang.$data.sim --knn 10 -m csls --cslsknn 20 #nn #$PREFIX
+                    #--output $DICTIONARIES/DOC.$src_lang-$trg_lang.$data.sim --knn $TOPN_DOC -m csls --cslsknn $TOPN_CSLS #nn
+                
+            # Opposite direction
+            #CUDA_VISIBLE_DEVICES=$GPUS $PYTHON scripts/bilingual_nearest_neighbor.py --source_embeddings $DOC_EMBEDDINGS/bucc2017/$src_lang-$trg_lang/$src_lang-$trg_lang.$data.$trg_lang.vec \
+                    #--target_embeddings $DOC_EMBEDDINGS/bucc2017/$src_lang-$trg_lang/$src_lang-$trg_lang.$data.$src_lang.vec \
+                    #--output $DICTIONARIES/DOC.$trg_lang-$src_lang.$data.sim --knn 10 -m csls --cslsknn 20
+            done;
         done;
     done;
 done;
 
 # ================= MINING_&_EVALUATION ==============================
-#for mine_method in $MINE_METHODS; do
-#    for filter_method in $FILTER_METHODS; do
-#        for data in $BUCC_SETS; do
-#            for src_lang in $SRC_LANGS; do
-#                for trg_lang in $TRG_LANGS; do
-#                    $PYTHON ./scripts/filter.py -i $MINING/bucc2017/$src_lang-$trg_lang/${mine_method}_$src_lang-$trg_lang.$data.sim -m $filter_method -th ${FILTER_THRESHOLDS[bucc17_${mine_method}_${filter_method}_${src_lang}_${trg_lang}]} \
-#			-o $MINING/bucc2017/$src_lang-$trg_lang/${mine_method}_${filter_method}_$src_lang-$trg_lang.$data.sim.pred
-#                    $PYTHON scripts/bucc_f-score.py  -p $MINING/bucc2017/$src_lang-$trg_lang/${mine_method}_${filter_method}_$src_lang-$trg_lang.$data.sim.pred -g $DATA/bucc2017/$src_lang-$trg_lang/$src_lang-$trg_lang.$data.gold > $MINING/bucc2017/$src_lang-$trg_lang/${mine_method}_${filter_method}_$src_lang-$trg_lang.$data.sim.pred.res
-#                done;
-#            done;
-#        done;
-#    done;
-#done;
+
+# for data in $BUCC_SETS; do
+#     for src_lang in $SRC_LANGS; do
+#         for trg_lang in $TRG_LANGS; do
+#             $PYTHON ./scripts/filter.py -i $MINING/bucc2017/$src_lang-$trg_lang/${mine_method}_$src_lang-$trg_lang.$data.sim -m $filter_method -th ${FILTER_THRESHOLDS[bucc17_${mine_method}_${filter_method}_${src_lang}_${trg_lang}]} \
+#     -o $MINING/bucc2017/$src_lang-$trg_lang/${mine_method}_${filter_method}_$src_lang-$trg_lang.$data.sim.pred
+#             $PYTHON scripts/bucc_f-score.py  -p $MINING/bucc2017/$src_lang-$trg_lang/${mine_method}_${filter_method}_$src_lang-$trg_lang.$data.sim.pred -g $DATA/bucc2017/$src_lang-$trg_lang/$src_lang-$trg_lang.$data.gold > $MINING/bucc2017/$src_lang-$trg_lang/${mine_method}_${filter_method}_$src_lang-$trg_lang.$data.sim.pred.res
+#         done;
+#     done;
+# done;
+
