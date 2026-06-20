@@ -19,7 +19,7 @@ The `contextual_sentence_embeddings.py` file can use the backend language model 
 Using the following command, you can convert the `input_file.txt` into a file (`output.vec`) with the sentences converted with the `model_name` model.
 
 ```
- python contextual_sentence_embeddings.py --input_file input_file.txt --output_file output.vec --model_name model_name
+python contextual_sentence_embeddings.py --input_file input_file.txt --output_file output.vec --model_name model_name
 ```
 
 
@@ -30,7 +30,7 @@ You can mine from the two created embedding files using the following terminal c
 python scripts/bilingual_nearest_neighbor.py --source_embeddings source_embeddings.vec --target_embeddings target_embeddings.vec --output output_dictionary.sim --knn 10 -m csls --cslsknn 20 
 ```
 This will take `source_embeddings.vec` and `target_embeddings.vec` as input files and output a dictionary `output_dictionary.sim`.
-It uses the CSLS metrics to compute the similarity (`-m csls`).
+It uses the CSLS metric to compute the similarity (`-m csls`).
 
 We run this part with the following packages:
 - faiss-gpu: 1.7.1
@@ -53,6 +53,8 @@ When a file with the gold sentence pairs (`sentence_pair.gold`) exists, you can 
 python scripts/bucc_f-score.py -p output.sim.pred -g sentence_pair.gold > output.sim.pred.res
 ```
 
+The `new_filter.py` file can also handle the filtering and evaluation jointly.
+
 ## Optional commands
 #### Alignment post-processing
 ```
@@ -62,6 +64,6 @@ After a first filtering based on the similarity score (`output.sim.pred`), align
 
 #### CBIE
 ```
-outlier_normalisation.py -m model_name -s src_lang -t trg_lang
+python outlier_processing.py -m model_name -s src_lang -t trg_lang
 ```
 This code requires changing the file paths in the code to run.

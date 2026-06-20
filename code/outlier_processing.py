@@ -5,7 +5,6 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-#import wget
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModel, AutoModelForMaskedLM
@@ -21,6 +20,28 @@ import psutil
 from scipy import cluster as clst
 from sklearn.decomposition import PCA
 
+def whitening(representations):
+    """ zca whitening transformation as best as i understand it
+
+    representations:
+        numpy (torch?) samples x hidden_size. afaict samples should be >> hidden_size
+
+     """
+
+    # step 1. mean centre
+    mu = np.mean(representations, axis=0)
+    representations = representations - mu
+    # step 2. covariance matrix
+    cov = np.cov(representations, rowvar=False)
+    # step 3. eigenvalue decomposition
+    values, vectors = np.linalg.eig(cov)
+    values = np.real(values)
+    vectors = np.real(vectors)
+    # step 4. calculate W
+    epsilon = 1e-5
+    W = vectors @ np.diag(1.0 / np.sqrt(values + epsilon)) @ vectors.T  # [M x M]
+    # step 5. apply W
+    return representations @ W #W @ representations
 
 def cluster_based(representations, n_cluster: int, n_pc: int, hidden_size: int=768, seed=42):
     """ Improving Isotropy of input representations using cluster-based method
@@ -90,16 +111,20 @@ def cluster_based(representations, n_cluster: int, n_pc: int, hidden_size: int=7
 
 ### Code from the outliers repository post_processing.py end ###
 
-args = argparse.Namespace(model='glot500', layer=8, device='0', dataset='tatoeba', #tatoeba_use_task_order=True,
+args = argparse.Namespace(model='glot500', layer=8, device='0', dataset='tatoeba',
                         batch_size=16, save_whitened=False, save_cbie=True, dist='cosine', embed_size=768, tgt_language='en')
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model_name', type=str, required=True, 
                         choices=['xlmr', 'glot500', 'pretrained', 'labse',
-                                 'laser', 'distil_xlmr', 'msimcse_glot500'], help='Embedding model')
+                                 'laser', 'distil_xlmr', 'msimcse_glot500',
+                                 'glot500_labse_france'], help='Embedding model')
     parser.add_argument('-s', '--src_lang', type=str, required=True, help='Source language')
     parser.add_argument('-t', '--trg_lang', type=str, required=True, help='Target language')
+
+    parser.add_argument('--whitening', action=argparse.BooleanOptionalAction,
+                    help='Using whitening')
 
     return parser.parse_args()
 
@@ -148,67 +173,15 @@ def get_embeds(data, model, tokenizer, args, device):
             output = model(**encoded, output_hidden_states=True)
             #if i == 0: print(output)
             if tgt_embeddings_layer is None:
-                #tgt_embeddings_layer = output[2][1:][args.layer].cpu()
-                tgt_embeddings_list.append(output[2][1:][args.layer].cpu())
+                tgt_embeddings_layer = output[2][1:][args.layer].cpu()
+                # tgt_embeddings_list.append(output[2][1:][args.layer].cpu())
             else:
-                #tgt_embeddings_layer = torch.cat((tgt_embeddings_layer, output[2][1:][args.layer].cpu()))
-                tgt_embeddings_list.append(output[2][1:][args.layer].cpu())
+                tgt_embeddings_layer = torch.cat((tgt_embeddings_layer, output[2][1:][args.layer].cpu()))
+                # tgt_embeddings_list.append(output[2][1:][args.layer].cpu())
         #if i == 0: i += 1
-        i += 1
-        tgt_embeddings_layer = torch.cat(tgt_embeddings_list)
+        # i += 1
+        # tgt_embeddings_layer = torch.cat(tgt_embeddings_list)
     return mean_pooling(tgt_embeddings_layer, attention_masks).cpu()
-
-
-def extract_model_embeds(args, dataset_split, device, langs, model, tokenizer):
-    '''Extracting embeddings for one language and one model.'''
-    model_name = args.model
-    print(f'Embeddings from {model_name}.')
-    for (src_lang, trg_lang) in langs: # e.g., hsb-de
-        print(f"Currently processing {src_lang}-{trg_lang}...")
-        try:
-            os.makedirs(f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/')
-        except OSError:
-            print(f"embeddings for {(src_lang, trg_lang)} already exist, skipping")
-            #continue
-
-        # DATA TO SPECIFY TRAINING ETC
-        data = dataset_split # 'test'
-        src = utils.text_to_line(open(f'./UnsupPSE/data/bucc2017/{src_lang}-{trg_lang}/{src_lang}-{trg_lang}.{data}.{src_lang}', 'r').read()) # hsb
-        trg = utils.text_to_line(open(f'./UnsupPSE/data/bucc2017/{src_lang}-{trg_lang}/{src_lang}-{trg_lang}.{data}.{trg_lang}', 'r').read()) # de
-        #trg = utils.text_to_line(open(f'./data/bucc2017/{src_lang}-{trg_lang}/{src_lang}-{trg_lang}.{data}.{lang}', 'r').read())
-        print(len(src), len(trg))
-        tgt_embeddings = get_embeds(src, model, tokenizer, args, device)
-        print(f'Saving to: ./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{src_lang}_{data}.pt')
-        # torch.save(tgt_embeddings, f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{trg_lang}_{data}.pt')
-        eng_embeddings = get_embeds(trg, model, tokenizer, args, device)
-        # # torch.save(tgt_embeddings, f'../embs/{args.dataset}/{args.model}/{args.layer}/{lang}/{lang}.pt')
-        # # torch.save(eng_embeddings, f'../embs/{args.dataset}/{args.model}/{args.layer}/{lang}/eng.pt')
-        print(f'Saving to: ./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{trg_lang}_{data}.pt')
-        # torch.save(eng_embeddings, f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{src_lang}_{data}.pt') # de
-        # When the embeddings are saved
-        # tgt_embeddings = torch.load(f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{trg_lang}_{data}.pt')
-        # eng_embeddings = torch.load(f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{src_lang}_{data}.pt')
-        
-        # For whitening or clustering
-        embeddings_list = [tgt_embeddings, eng_embeddings] # hsb, de
-        # if args.save_whitened:
-        #     print(f'Whitening')
-        #     tgt_whitened = torch.Tensor(whitening(tgt_embeddings.numpy()))
-        #     eng_whitened = torch.Tensor(whitening(eng_embeddings.numpy()))
-        #     torch.save(tgt_whitened, f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{trg_lang}_{data}_whitened.pt')
-        #     torch.save(eng_whitened, f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{src_lang}_{data}_whitened.pt') # de
-        if args.save_cbie:
-            print(f'CBIE')
-            n_cluster = max(len(src) // 300, 1)
-            tgt_cbie = torch.Tensor(cluster_based(
-                tgt_embeddings.numpy(), n_cluster=n_cluster, n_pc=12, hidden_size=tgt_embeddings.shape[1]))
-            eng_cbie = torch.Tensor(cluster_based(
-                eng_embeddings.numpy(), n_cluster=n_cluster, n_pc=12, hidden_size=eng_embeddings.shape[1]))
-        #     torch.save(tgt_cbie, f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{trg_lang}_{data}_cbie.pt')
-        #     torch.save(eng_cbie, f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{src_lang}_{data}_cbie.pt') # de
-            embeddings_list = [tgt_cbie, eng_cbie]
-        print(f"Finished saving embeddings for {src_lang}-{trg_lang} in model {model_name}.")
-        return embeddings_list
 
 
 def convert_tf_to_list(tf_embeddings, data_file_path, output_path, start_i=0):
@@ -296,15 +269,16 @@ def transform_saved_embeddings(args, dataset_split, device, langs, model, tokeni
         id_list = [src_id_list, trg_id_list]
         tgt_embeddings = np.array(tgt_embeddings)
         eng_embeddings = np.array(eng_embeddings)
-        
+
         # For whitening or clustering
         embeddings_list = [tgt_embeddings, eng_embeddings] # hsb, de
-        # if args.save_whitened:
-        #     print(f'Whitening')
-        #     tgt_whitened = torch.Tensor(whitening(tgt_embeddings.numpy()))
-        #     eng_whitened = torch.Tensor(whitening(eng_embeddings.numpy()))
+        if args.save_whitened:
+            print(f'Whitening')
+            tgt_whitened = torch.Tensor(whitening(tgt_embeddings)) #.numpy()))
+            eng_whitened = torch.Tensor(whitening(eng_embeddings)) #.numpy()))
         #     torch.save(tgt_whitened, f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{trg_lang}_{data}_whitened.pt')
         #     torch.save(eng_whitened, f'./embs/{src_lang}-{trg_lang}/{model_name}/{args.layer}/{src_lang}_{data}_whitened.pt') # de
+            embeddings_list = [tgt_whitened, eng_whitened]
         if args.save_cbie:
             print(f'CBIE')
             n_cluster = max(len(utils.text_to_line(src_file)) // 300, 1)
@@ -363,7 +337,9 @@ def convert_id_embed_to_list(id_list, embeddings_list, output_path, start_i=0): 
 def main():
     #args = parse_args()
 
-    model, tokeniser = load_model(args, device='cuda')
+    OUTPUT_FOLDER = 'UnsupPSE/results_full_xlmr/new_embeddings/doc/bucc2017'
+
+    model, tokeniser = 0, 0 #load_model(args, device='cuda')
     
     # model_name = 'glot500'
     # src_lang = 'hsb'
@@ -374,6 +350,11 @@ def main():
     model_name = sp_args.model_name
     src_lang = sp_args.src_lang
     trg_lang = sp_args.trg_lang
+    args.model = model_name
+    if sp_args.whitening:
+        print('Using whitening instead of CBIE')
+        args.save_whitened = True
+        args.save_cbie = False
 
     # Using already extracted embeddings
     train_id_list, train_embeddings_list = transform_saved_embeddings(args, dataset_split='train', device='cuda', 
@@ -390,13 +371,15 @@ def main():
     #     for lang in [src_lang, trg_lang]: # Language to process
     for (data, lang), (id_list, tf_embeddings) in embeddings_dict.items():
         print(f'Processing the {data} data for {lang}.')
-        output_file_name = f'CBIE2_{model_name}.{src_lang}-{trg_lang}.{data}.{lang}.vec'
+        if sp_args.whitening: 
+            output_file_name = f'whitening_{model_name}.{src_lang}-{trg_lang}.{data}.{lang}.vec'
+        else: # CBIE
+            output_file_name = f'CBIE2_{model_name}.{src_lang}-{trg_lang}.{data}.{lang}.vec'
         convert_id_embed_to_list(id_list=id_list, embeddings_list=tf_embeddings, 
-                output_path=f'UnsupPSE/results_full_xlmr/new_embeddings/doc/bucc2017/{src_lang}-{trg_lang}/{output_file_name}', 
+                output_path=f'{OUTPUT_FOLDER}/{src_lang}-{trg_lang}/{output_file_name}', 
                 start_i=0)
         #convert_tf_to_list(tf_embeddings, # f'./embs/{trg_lang}-{src_lang}/{model_name}/8/{lang}_{data}_cbie.pt')
     return 0
-
 
 if __name__ == '__main__':
 

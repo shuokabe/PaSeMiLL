@@ -7,12 +7,7 @@ pip install sentence-transformers # For LaBSE
 #pip install gensim # When using latest conda environment. WARNING: scipy has been downgraded when installing gensim!
 #pip install tokenizers -U
 
-#source ./environment.sh
 source ./environment_full_xlmr.sh
-
-# TO CHANGE: model name prefix
-# Do not forget the . after the model name for all models except the base one
-PREFIX='distil_xlmr.'  #'laser3.' #'glot500.' #'laser.' #'pretrained-hsb.' #'glot500.' #'LaBSE.'
 
 # ================= MKDIR =====================
 #for src_lang in $SRC_LANGS; do

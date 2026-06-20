@@ -13,7 +13,7 @@ The `code` folder contains useful code to use with the original [UnsupPSE](https
 The pre-training of XLM-R with Upper Sorbian data is addressed in the `pretraining` subfolder.
 
 ## How to use?
-The full pipeline is available in the `mine_bucc_full_xlmr.sh` file.
+The full pipeline is available in the `code/mine_bucc_full_xlmr.sh` file.
 
 Once your two monolingual corpora are ready (one sentence per line):
 1. Convert the sentences into embeddings using the backend language model of your choice (e.g., XLM-R, Glot500, or pre-trained).
@@ -21,8 +21,8 @@ Once your two monolingual corpora are ready (one sentence per line):
 3. Filter the output sentence pairs based on a defined threshold (hyperparameter).
 
 ## Licence
-The repository has the MIT licence (e.g., `code` folder), *except* for the benchmark dataset.
-The dataset (`data` folder) is released with a CC BY-NC-SA licence.
+The repository has the MIT licence (e.g., `code` folder), *except* for the benchmark dataset.  
+The dataset (`data` folder) is released with a CC BY-NC-SA licence (data from (Okabe and Fraser, 2025)).
 
 ## Citations
 For the updated version of the pipeline, please use the following citation (from the ACL Anthology):
@@ -49,7 +49,7 @@ For the updated version of the pipeline, please use the following citation (from
 }
 ```
 
-If you use the BUCC-style dataset from the `dataset` folder or the older version of the pipeline, please use the following citation (from the ACL Anthology):
+If you use the BUCC-style dataset from the `data` folder or the older version of the pipeline, please use the following citation (from the ACL Anthology):
 
 ```
 @inproceedings{okabe-fraser-2025-bilingual,

@@ -15,12 +15,12 @@ DATA=./data
 SRC_LANGS='oci' #'chv' #'hsb' # 'dsb' 'oci' # which BUCC language pairs to run; each source language is paired with each target language
 TRG_LANGS='es' #'en' #'es' #'ru' #'de' 
 BUCC_SETS='train test' 
-MODELS='xlmr' #'glot500.' #'LaBSE.'
+MODELS='xlmr' # glot500 LaBSE' #'glot500.' #'LaBSE.'
 # For BUCC datasets, use 'sample training', otherwise, 'train test'
 
+# TO UPDATE
 RESULTS=./results_full_xlmr
 EMBEDDINGS=$RESULTS/new_embeddings 
 DOC_EMBEDDINGS=$EMBEDDINGS/doc
 DICTIONARIES=$RESULTS/dictionaries
 MINING=$RESULTS/mining
-# FILTERING=$RESULTS/filtering

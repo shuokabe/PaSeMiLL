@@ -8,7 +8,8 @@ def delete_value_from_vector(vector, value):
     To be used only when the value is in the vector.
     '''
     if value in vector:
-        vector.remove(value)
+        # vector.remove(value)
+        vector = [el for el in vector if el != value]
         return vector
     else:
         raise ValueError('The asked value is not in the vector.')
